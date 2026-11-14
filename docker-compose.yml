@@ -1,0 +1,91 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: laravel_app
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - mysql
+      - redis
+    ports:
+      - "8010:8010"
+    working_dir: /var/www/html
+    command: php artisan serve --host=0.0.0.0 --port=8010
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3307"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer_prog_paralela
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+
+  redis:
+    image: redis:latest
+    container_name: redis_prog_paralela
+    ports:
+      - "6379:6379"
+    restart: always
+
+  horizon:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: laravel_horizon
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - redis
+      - mysql
+    working_dir: /var/www/html
+    command: php artisan horizon
+
+  reverb:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: laravel_reverb
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - redis
+      - mysql
+    working_dir: /var/www/html
+    command: php artisan reverb:start --host=0.0.0.0 --port=8085 --debug
+    ports:
+      - "8085:8085"
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok_prog_paralela
+    restart: "no"
+    profiles:
+      - ngrok
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command: http --domain=${NGROK_DOMAIN} app:8010
+    depends_on:
+      - app
+
+volumes:
+  mysql_data:
