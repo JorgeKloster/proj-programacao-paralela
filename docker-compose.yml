@@ -24,7 +24,7 @@ services:
       MYSQL_PASSWORD: secret
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3307:3307"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
 
@@ -59,21 +59,6 @@ services:
       - mysql
     working_dir: /var/www/html
     command: php artisan horizon
-
-  reverb:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-    container_name: laravel_reverb
-    volumes:
-      - .:/var/www/html
-    depends_on:
-      - redis
-      - mysql
-    working_dir: /var/www/html
-    command: php artisan reverb:start --host=0.0.0.0 --port=8085 --debug
-    ports:
-      - "8085:8085"
 
   ngrok:
     image: ngrok/ngrok:latest
